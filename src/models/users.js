@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Task = require('./tasks');
 
 // Define the base schema
 const userSchema = mongoose.Schema({
@@ -45,6 +46,12 @@ const userSchema = mongoose.Schema({
       type: String
     }
   }]
+});
+
+userSchema.virtual('tasks', {
+  ref: 'Task',
+  localField: '_id',
+  foreignField: 'owner'
 });
 
 // Define custom JSON conversion method
@@ -93,6 +100,14 @@ userSchema.pre('save', async function(next) {
     user.password = await bcrypt.hash(user.password, 8);
   }
   
+  next();
+});
+
+// Delete tasks when user is deleted
+userSchema.pre('remove', async function(next) {
+  await Task.deleteMany({
+    owner: this._id
+  })
   next();
 });
 

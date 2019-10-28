@@ -19,7 +19,8 @@ router.post('/', auth, async (req, res) => {
 
 router.get('/', auth, async (req, res) => {
   try {
-    const result = await Task.find({});
+    await req.user.populate('tasks').execPopulate();
+    const result = req.user.tasks;
     if (!result) {
       res.status(204).end();
     } else {
@@ -32,7 +33,10 @@ router.get('/', auth, async (req, res) => {
 
 router.get('/:id', auth, async (req, res) => {
   try {
-    const result = await Task.findById(req.params.id);
+    const result = await Task.findOne({
+      _id: req.params.id,
+      owner: req.user._id
+    });
     if (!result) {
       res.status(404).end();
     } else {
@@ -53,7 +57,10 @@ router.patch('/:id', auth, async (req, res) => {
   }
 
   try {
-    const task = await Task.findById(req.params.id);
+    const task = await Task.findOne({
+      _id: req.params.id,
+      owner: req.user._id
+    });
 
     if (!task) {
       return res.status(404).end();
@@ -72,7 +79,10 @@ router.patch('/:id', auth, async (req, res) => {
 
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const result = await Task.findByIdAndDelete(req.params.id);
+    const result = await Task.findOneAndDelete({
+      _id: req.params.id,
+      owner: req.user._id
+    });
     if (!result) {
       res.status(404).end();
     } else {
