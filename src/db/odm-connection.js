@@ -10,3 +10,5 @@ mongoose
   })
   .then(() => console.log("Database connection successful"))
   .catch(() => console.log("Database connection failed"));
+
+mongoose.set('useCreateIndex', true);

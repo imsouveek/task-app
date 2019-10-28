@@ -1,10 +1,14 @@
 const express = require('express');
 const Task = require('../models/tasks');
+const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-  const new_task = new Task(req.body);
+router.post('/', auth, async (req, res) => {
+  const new_task = new Task({
+    ...req.body,
+    owner: req.user._id 
+  });
   try {
     await new_task.save();
     res.status(201).send(new_task);
@@ -13,7 +17,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const result = await Task.find({});
     if (!result) {
@@ -26,7 +30,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const result = await Task.findById(req.params.id);
     if (!result) {
@@ -39,7 +43,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ['description', 'completed'];
   const isValid = updates.every((update) => allowedUpdates.includes(update));
@@ -49,27 +53,24 @@ router.patch('/:id', async (req, res) => {
   }
 
   try {
-    const task = await Task.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-        useFindAndModify: false
-      }
-    );
+    const task = await Task.findById(req.params.id);
 
     if (!task) {
-      res.status(404).end();
-    } else {
-      res.status(200).send(task);
+      return res.status(404).end();
     }
+
+    updates.forEach(update => {
+      task[update] = req.body[update];
+    });
+
+    await task.save();
+    res.status(200).send(task);
   } catch (err) {
     res.status(400).send(err);
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const result = await Task.findByIdAndDelete(req.params.id);
     if (!result) {
