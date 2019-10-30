@@ -30,16 +30,47 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// Path to list all tasks
+/*
+  Path to list all tasks. Allowed query options are:-
+  * completed [true/false] Filter on completed or incomplete tasks
+  * limit     [number    ] How many rows to retrieve
+  * skip      [number    ] How many rows of results to skip before retrieving rows
+  * sortBy    [string    ] E.g, description_desc,completed_desc
+*/
 router.get('/', auth, async (req, res) => {
+  const match = {};
+  const sort = {};
+
+  // Setup filters
+  if (req.query.completed) {
+    match.completed = req.query.completed === 'true';
+  }
+
+  // Setup sorting of results
+  if (req.query.sortBy) {
+    const sortArray = req.query.sortBy.split(',');
+    sortArray.forEach(item => {
+      const sortlist = item.split('_');
+      sort[sortlist[0]] = sortlist[1] === 'asc'? 1: -1;
+    })
+  }
+
   try {
 
     // Populate all tasks for user
-    await req.user.populate('tasks').execPopulate();
+    await req.user.populate({
+      path: 'tasks',
+      match, 
+      options: {
+        limit: parseInt(req.query.limit),
+        skip: parseInt(req.query.skip),
+        sort
+      }
+    }).execPopulate();
     const result = req.user.tasks;
 
     // Send result to  client if found. Else, send error
-    if (!result) {
+    if (result.length <= 0) {
       res.status(204).end();
     } else {
       res.status(200).send(result);

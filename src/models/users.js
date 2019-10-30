@@ -9,11 +9,15 @@ const Task = require('./tasks');
 
 // Define the base schema
 const userSchema = mongoose.Schema({
+
+  // User Name
   name: {
     type: String,
     required: true,
     trim: true
   },
+
+  // User Email. This is required and unique
   email: {
     type: String,
     trim: true,
@@ -26,6 +30,8 @@ const userSchema = mongoose.Schema({
       }
     }
   },
+
+  // User Password
   password: {
     type: String,
     trim: true,
@@ -37,12 +43,21 @@ const userSchema = mongoose.Schema({
       }
     }
   },
+
+  // User's age
   age: {
     type: Number,
     default: 18,
     min: [0, "Age cannot be negative"],
     max: [100, "Expecting human age"]
   },
+
+  // User's profile image
+  avatar: {
+    type: Buffer
+  },
+  
+  // All auth tokens created by user
   tokens: [{
     token: {
       required: true,
@@ -50,6 +65,8 @@ const userSchema = mongoose.Schema({
     }
   }]
 }, {
+  
+  // Enable timestamps for audit 
   timestamps: true
 });
 
@@ -73,7 +90,8 @@ userSchema.methods.toJSON = function() {
   // Delete sensitive data
   delete user.password;
   delete user.tokens;
-
+  delete user.avatar;
+  
   return user;
 }
 

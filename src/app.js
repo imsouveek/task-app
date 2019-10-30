@@ -23,3 +23,10 @@ app.use('/tasks', require('./routes/tasks'));
 app.listen(port,() => {
   console.log(`Server listening on port ${port}`);
 });
+
+// Error handler
+app.use((err, req, res, next) => {
+  res.send({
+    error: err.message
+  })
+});
