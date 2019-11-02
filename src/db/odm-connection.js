@@ -5,8 +5,8 @@
 */
 const mongoose = require('mongoose');
 
-const connectionURL = 'mongodb://127.0.0.1:27017';
-const db = 'task-api';
+const connectionURL = process.env.DB_CONNECTION_URL;
+const db = process.env.DB_NAME;
 
 mongoose
   .connect(`${connectionURL}/${db}`, {
@@ -16,5 +16,5 @@ mongoose
   .then(() => console.log("Database connection successful"))
   .catch(() => console.log("Database connection failed"));
 
-// Following line prevents deprecation warning 
+// Following line prevents deprecation warning
 mongoose.set('useCreateIndex', true);

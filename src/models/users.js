@@ -56,7 +56,7 @@ const userSchema = mongoose.Schema({
   avatar: {
     type: Buffer
   },
-  
+
   // All auth tokens created by user
   tokens: [{
     token: {
@@ -65,13 +65,13 @@ const userSchema = mongoose.Schema({
     }
   }]
 }, {
-  
-  // Enable timestamps for audit 
+
+  // Enable timestamps for audit
   timestamps: true
 });
 
 /*
-  Virtual method on userSchema lets mongoDb know all children of user schema. This 
+  Virtual method on userSchema lets mongoDb know all children of user schema. This
   allows all a user's tasks to be fetched
 */
 userSchema.virtual('tasks', {
@@ -91,7 +91,7 @@ userSchema.methods.toJSON = function() {
   delete user.password;
   delete user.tokens;
   delete user.avatar;
-  
+
   return user;
 }
 
@@ -103,8 +103,8 @@ userSchema.methods.toJSON = function() {
 userSchema.methods.getAuthToken = async function() {
   try {
     // Create Token
-    const token = jwt.sign({_id: this._id.toString()}, 'Random14Chars!');
-    
+    const token = jwt.sign({_id: this._id.toString()}, process.env.TOKEN_SALT);
+
     /*
       Append token to user document. This allows users to login from multiple devices
       but also ensures secure login
@@ -121,7 +121,7 @@ userSchema.methods.getAuthToken = async function() {
 };
 
 /*
-  Define methods on model itself. This method is for login users only and 
+  Define methods on model itself. This method is for login users only and
   allows easy verification of user email and password
 */
 userSchema.statics.getCredentials = async function(email, password) {
@@ -154,7 +154,7 @@ userSchema.pre('save', async function(next) {
   if (user.isModified('password')) {
     user.password = await bcrypt.hash(user.password, 8);
   }
-  
+
   // Without next() call, mongoose does not know that middleware completed
   next();
 });

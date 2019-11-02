@@ -10,7 +10,7 @@ require('./db/odm-connection');
 const app = express();
 
 // Identify port
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 // Parse request body as json
 app.use(express.json());

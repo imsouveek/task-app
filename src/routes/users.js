@@ -6,6 +6,7 @@ const User = require('../models/users');
 const auth = require('../middleware/auth');
 const multer = require('multer');
 const sharp = require('sharp');
+const { sendWelcomeEmail, sendGoodByeEmail } = require('../emails/account');
 
 const router = express.Router();
 
@@ -17,6 +18,7 @@ router.post('/', async (req, res) => {
 
   try {
     await new_user.save();
+    sendWelcomeEmail(new_user.email, new_user.name);
 
     // If user creation succeeds, get token for client use
     const token = await new_user.getAuthToken();
@@ -38,7 +40,7 @@ router.post('/login', async (req, res) => {
     if (!req.body.email || !req.body.password) {
       throw new Error('Need both email and password to login');
     }
-    
+
     // Use static method on User model to get user details
     const user = await User.getCredentials(req.body.email, req.body.password);
 
@@ -127,6 +129,8 @@ router.delete('/', auth, async (req, res) => {
 
     // Remove user set in auth middleware and send response to client
     await req.user.remove();
+    sendGoodByeEmail(req.user.email, req.user.name);
+
     res.status(200).send(req.user);
 
   } catch (err) {
@@ -136,7 +140,7 @@ router.delete('/', auth, async (req, res) => {
 
 // Setup middleware for handling file data
 const upload = multer({
-  
+
   // Set filesize limit
   limits: {
     fileSize: 1000000
@@ -144,11 +148,11 @@ const upload = multer({
 
   // Callback error if file does not match requrirements
   fileFilter(req, file, cb) {
-    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+    if (!file.originalname.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)) {
       cb(new Error('Need images only'));
-    } 
+    }
     cb(undefined, true);
-    
+
   }
 });
 
@@ -163,7 +167,7 @@ router.post('/avatar', auth, upload.single('upload'), async (req, res) => {
   try {
     /*
       Take file.buffer from multer - this is set because multer options do not
-      specify any destination. Next, we resize it and convert it to png. Finally, we 
+      specify any destination. Next, we resize it and convert it to png. Finally, we
       save the data
     */
     const buffer = await sharp(req.file.buffer)
@@ -179,7 +183,7 @@ router.post('/avatar', auth, upload.single('upload'), async (req, res) => {
   } catch (err) {
     res.status(400).send();
   }
-  
+
 });
 
 // Route to delete avatar
@@ -197,12 +201,12 @@ router.delete('/avatar', auth, async (req, res) => {
   } catch (err) {
     res.status(400).send();
   }
-  
+
 });
 
 // Route to get avatar
 router.get('/avatar', auth, async(req, res) => {
-  
+
   // Avatar should exist on user object
   if (!req.user.avatar) {
     return res.status(404).send();
