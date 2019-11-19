@@ -10,8 +10,8 @@ const auth = async function(req, res, next) {
     const token = req.header('Authorization').replace('Bearer ', '');
 
     // Verify token using library
-    const decoded = jwt.verify(token, 'Random14Chars!');
-    
+    const decoded = jwt.verify(token, process.env.TOKEN_SALT);
+
     /*
       Token is created using user._id. Also all generated tokens are saved to db.
       Therefore, using the id and token parameter to verify that user id and token
@@ -23,7 +23,7 @@ const auth = async function(req, res, next) {
     }
 
     /*
-      Have to set user in request object so that express route handlers don't have to 
+      Have to set user in request object so that express route handlers don't have to
       query for user again. Need token for logout route handler to delete token during
       logout
     */
@@ -38,6 +38,6 @@ const auth = async function(req, res, next) {
       error: 'Please authenticate'
     })
   }
-} 
+}
 
 module.exports = auth;
