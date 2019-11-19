@@ -6,10 +6,15 @@ const mongoose = require('mongoose');
 
 // Setup reference object
 const userId = new mongoose.Types.ObjectId();
-const token1 = jwt.sign({ _id: userId}, process.env.TOKEN_SALT);
-for (i = 0; i < 2000000; ++i);
-const token2 = jwt.sign({ _id: userId}, process.env.TOKEN_SALT);
 
+// Generate 1st token
+const token1 = jwt.sign({ _id: userId}, process.env.TOKEN_SALT);
+
+// Add a slight delay to ensure different tokens
+for (i = 0; i < 2000000; ++i);
+
+// Generate 2nd token
+const token2 = jwt.sign({ _id: userId}, process.env.TOKEN_SALT);
 
 const userObj = {
   _id: userId,
@@ -359,8 +364,6 @@ test('Logout requires authentication', async () => {
   .send()
   .expect(401);
 });
-
-
 
 /* Verify logoutAll */
 test('LogoutAll should remove all token', async () => {
