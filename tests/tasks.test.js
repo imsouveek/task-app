@@ -66,7 +66,7 @@ test('Get All Tasks', async() => {
   expect(response.body.length).toBe(2);
 });
 
-/* Verify create task fails without auth */
+/* Verify get all task fails without auth */
 test('Get all Tasks fails without auth', async () => {
   /* Post request for creating task */
   const response = await request(app)
@@ -173,6 +173,9 @@ test('Update task', async () => {
 
 /* Verify update task fails without auth */
 test('Update Task by Id fails without auth', async () => {
+  // Get task obj before sending request
+  const taskPre = await Task.findById(taskOneObj._id.toString());
+
   /* Post request for creating task */
   const response = await request(app)
     .patch(`/tasks/${taskOneObj._id.toString()}`)
@@ -180,10 +183,18 @@ test('Update Task by Id fails without auth', async () => {
       completed: 'true'
     })
     .expect(401);
+
+  /* Ensure task object in db has not changed */
+  const taskPost = await Task.findById(taskOneObj._id.toString());
+  expect(taskPost).toMatchObject(taskPre);
 });
 
 /* Verify can't update restricted fields */
 test('Should not be able to update task id', async () => {
+  // Get task obj before sending request
+  const taskPre = await Task.findById(taskOneObj._id.toString());
+
+  // Send request
   await request(app)
     .patch(`/tasks/${taskOneObj._id.toString()}`)
     .set('Authorization', `Bearer ${userOneObj.tokens[0].token}`)
@@ -191,10 +202,17 @@ test('Should not be able to update task id', async () => {
       _id: new mongoose.Types.ObjectId()
     })
     .expect(400);
+
+  /* Ensure task object in db has not changed */
+  const taskPost = await Task.findById(taskOneObj._id.toString());
+  expect(taskPost).toMatchObject(taskPre);
 });
 
 /* Verify can't update fields for other user */
 test('Should not be able to update task for other user', async () => {
+  // Get task obj before sending request
+  const taskPre = await Task.findById(taskOneObj._id.toString());
+
   await request(app)
     .patch(`/tasks/${taskOneObj._id.toString()}`)
     .set('Authorization', `Bearer ${userTwoObj.tokens[0].token}`)
@@ -202,6 +220,10 @@ test('Should not be able to update task for other user', async () => {
       completed: 'true'
     })
     .expect(404);
+
+  /* Ensure task object in db has not changed */
+  const taskPost = await Task.findById(taskOneObj._id.toString());
+  expect(taskPost).toMatchObject(taskPre);
 });
 
 /* Verify delete */
@@ -224,6 +246,10 @@ test('Delete Task by Id fails without auth', async () => {
     .delete(`/tasks/${taskOneObj._id.toString()}`)
     .send()
     .expect(401);
+
+    /* Check that task still exists */
+    const task = await Task.findById(taskOneObj._id.toString());
+    expect(task).not.toBeNull();
 });
 
 /* Verify delete */
@@ -233,5 +259,9 @@ test('Test delete task should fail for other user', async () => {
     .set('Authorization', `Bearer ${userTwoObj.tokens[0].token}`)
     .send()
     .expect(404);
+
+    /* Check that task still exists */
+    const task = await Task.findById(taskOneObj._id.toString());
+    expect(task).not.toBeNull();
 
 });

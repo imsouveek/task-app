@@ -110,6 +110,10 @@ test('Donot login non-existing user', async () => {
       password: userOneObj.password
     })
     .expect(400);
+
+  /* Verify no new tokens added */
+  const user = await User.findById(userOneId);
+  expect(user.tokens.length).toBe(2);
 });
 
 /* Test failure to login without exact password */
@@ -121,6 +125,10 @@ test('Donot login without correct password', async () => {
       password: "Puchu@12"
     })
     .expect(400);
+
+  /* Verify no new tokens added */
+  const user = await User.findById(userOneId);
+  expect(user.tokens.length).toBe(2);
 });
 
 /* Test getting my user profile */
@@ -159,6 +167,10 @@ test('Cannot delete my user without authentication', async() => {
     .delete('/users')
     .send()
     .expect(401);
+
+  /* Should be able to find user in database */
+  const user = await User.findById(userOneId);
+  expect(user).not.toBeNull();
 });
 
 /* Verify file upload */
@@ -180,6 +192,10 @@ test('Should be able to upload images only with authentication', async() => {
     .post('/users/avatar')
     .attach('upload', 'tests/fixtures/IMG_2821.JPG')
     .expect(401);
+
+  /* Verify no avatar in db */
+  const user = await User.findById(userOneId);
+  expect(user.avatar).toBeUndefined();
 });
 
 /*
@@ -217,7 +233,7 @@ test('Check download avatars', async () => {
   expect(response.body).toEqual(expect.any(Buffer));
 });
 
-/* Verify avatar upload requires authentication */
+/* Verify get avatar requires authentication */
 test('Should be able to download images only with authentication', async() => {
   await request(app)
     .get('/users/avatar')
@@ -253,10 +269,20 @@ test('Check delete avatars', async () => {
 
 /* Verify avatar delete requires authentication */
 test('Should be able to delete images only with authentication', async() => {
+  /* Upload avatar from fixtures */
+  await request(app)
+    .post('/users/avatar')
+    .set('Authorization', `Bearer ${userOneObj.tokens[0].token}`)
+    .attach('upload', 'tests/fixtures/IMG_2821.JPG');
+
   await request(app)
     .delete('/users/avatar')
     .send()
     .expect(401);
+
+  /* Verify that Buffer type is associated to avatar */
+  const user = await User.findById(userOneId);
+  expect(user.avatar).toEqual(expect.any(Buffer))
 
 });
 
@@ -309,6 +335,9 @@ test('Should not allow update to restricted fields', async () => {
     })
     .expect(400);
 
+  /* Check no changes in Db */
+  const user = await User.findById(userOneId);
+  expect(user._id.toString()).toBe(userOneId.toString());
 });
 
 /* Verify that updating user profile requires authentication */
@@ -319,6 +348,7 @@ test('Cannot update my user details without authentication', async () => {
       "password": "123!Test"
     })
     .expect(401);
+
 });
 
 /* Verify logout */
@@ -340,6 +370,10 @@ test('Logout requires authentication', async () => {
   .get('/users/logout')
   .send()
   .expect(401);
+
+  /* Verify all tokens are intact */
+  const user = await User.findById(userOneId);
+  expect(user.tokens.length).toBe(2);
 });
 
 /* Verify logoutAll */
@@ -358,7 +392,11 @@ test('LogoutAll should remove all token', async () => {
 /* Verify logoutAll requires auth */
 test('LogoutAll requires authentication', async () => {
   await request(app)
-  .get('/users/logoutAll')
-  .send()
-  .expect(401);
+    .get('/users/logoutAll')
+    .send()
+    .expect(401);
+
+  /* Verify all tokens are intact */
+  const user = await User.findById(userOneId);
+  expect(user.tokens.length).toBe(2);
 });
